@@ -6,3 +6,4 @@ PyYAML==6.0
 semver==2.13.0
 cryptography==37.0.2
 kubernetes==25.3.0
+semver==2.13.0

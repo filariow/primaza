@@ -331,7 +331,6 @@ class WorkerCluster(Cluster):
         """
         Generates the kubeconfig for the CertificateSignignRequest `csr`.
         The key used when creating the CSR is also needed.
-
         Returns the YAML string
         """
         kubeconfig = self.get_csr_kubeconfig(certificate_key, csr)
@@ -341,7 +340,6 @@ class WorkerCluster(Cluster):
         """
         Generates the kubeconfig for the CertificateSignignRequest "primaza".
         The key used when creating the CSR is also needed.
-
         Returns the YAML string
         """
         return self.get_user_kubeconfig_yaml(certificate_key, "primaza")
@@ -350,15 +348,25 @@ class WorkerCluster(Cluster):
         api_client = self.get_api_client()
         appsv1 = client.AppsV1Api(api_client)
 
-        appsv1.read_namespaced_deployment(name="primaza-controller-agentapp", namespace=namespace)
+        appsv1.read_namespaced_deployment(name="controller-agentapp", namespace=namespace)
         return True
 
     def is_svc_agent_deployed(self, namespace: str) -> bool:
         api_client = self.get_api_client()
         appsv1 = client.AppsV1Api(api_client)
 
-        appsv1.read_namespaced_deployment(name="primaza-controller-agentsvc", namespace=namespace)
+        appsv1.read_namespaced_deployment(name="controller-agentsvc", namespace=namespace)
         return True
+
+    def deploy_agentapp(self, namespace: str):
+        """
+        Deploys Application Agent into a cluster's namespace
+        """
+
+    def deploy_agentsvc(self, namespace: str):
+        """
+        Deploys the Service Agent into a cluster's namespace
+        """
 
 
 # Behave steps
@@ -382,7 +390,7 @@ def ensure_application_namespace_exists(context, cluster_name: str, namespace: s
 @step(u'On Worker Cluster "{cluster_name}", Primaza Application Agent is deployed into namespace "{namespace}"')
 def application_agent_is_deployed(context, cluster_name: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
-
+    worker.deploy_agentapp(namespace)
     polling2.poll(
         target=lambda: worker.is_app_agent_deployed(namespace),
         step=1,
@@ -415,7 +423,7 @@ def ensure_service_namespace_exists(context, cluster_name: str, namespace: str):
 @step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent is deployed into namespace "{namespace}"')
 def service_agent_is_deployed(context, cluster_name: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
-
+    worker.deploy_agentsvc(namespace)
     polling2.poll(
         target=lambda: worker.is_svc_agent_deployed(namespace),
         step=1,
@@ -437,3 +445,10 @@ def service_agent_is_not_deployed(context, cluster_name: str, namespace: str):
         target=lambda: is_not_found(),
         step=1,
         timeout=30)
+
+
+@given('Worker Cluster "{cluster_name}" is running')
+@given('Worker Cluster "{cluster_name}" is running with kubernetes version "{version}"')
+def ensure_worker_cluster_is_running(context, cluster_name: str, version: str = None):
+    worker_cluster = context.cluster_provider.create_worker_cluster(cluster_name, version)
+    worker_cluster.start()

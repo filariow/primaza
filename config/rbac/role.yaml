@@ -13,6 +13,18 @@ rules:
   - get
   - list
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - primaza.io
   resources:
   - clusterenvironments
@@ -76,12 +88,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - primaza.io
-  resources:
-  - servicebindings/finalizers
-  verbs:
-  - update
 - apiGroups:
   - primaza.io
   resources:
