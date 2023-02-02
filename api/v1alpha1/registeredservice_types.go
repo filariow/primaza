@@ -42,6 +42,19 @@ type RegisteredServiceHealthCheck struct {
 	// Container defines a container that will run a check against the
 	// ServiceEndpointDefinition to determine connectivity and access.
 	Container HealthCheckContainer `json:"container"`
+<<<<<<< Updated upstream
+=======
+}
+
+// ServiceClassIdentityItem defines an attribute that is necessary to
+// identify a service class.
+type ServiceClassIdentityItem struct {
+	// Name of the service class identity attribute.
+	Name string `json:"name"`
+
+	// Value of the service class identity attribute.
+	Value string `json:"value"`
+>>>>>>> Stashed changes
 }
 
 // ServiceEndpointDefinitionSecretRef defines a reference to

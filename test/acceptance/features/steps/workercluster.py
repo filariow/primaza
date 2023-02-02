@@ -98,6 +98,49 @@ class WorkerCluster(Cluster):
             time.sleep(5)
         assert False, f"Timed-out waiting CertificateSignignRequest '{csr}' certificate to become ready"
 
+    def create_application_namespace(self, namespace: str):
+        api_client = self.get_api_client()
+        corev1 = client.CoreV1Api(api_client)
+        rbacv1 = client.RbacAuthorizationV1Api(api_client)
+
+        # create application namespace
+        ns = client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+        corev1.create_namespace(ns)
+
+        # create service account
+        sa = client.V1ServiceAccount(metadata=client.V1ObjectMeta(name="primaza-agentapp"))
+        corev1.create_namespaced_service_account(namespace=namespace, body=sa)
+
+        # create role
+        r = client.V1Role(
+            metadata=client.V1ObjectMeta(name="primaza-agentapp-role", namespace=namespace),
+            rules=[
+                client.V1PolicyRule(
+                    api_groups=["coordination.k8s.io"],
+                    resources=["leases"],
+                    verbs=["get", "list", "watch", "create", "update", "patch","delete"]),
+                client.V1PolicyRule(
+                    api_groups=["primaza.io"],
+                    resources=["servicebindings"],
+                    verbs=["get", "list", "watch"])
+            ])
+        rbacv1.create_namespaced_role(namespace, r)
+
+        # bind role to service account
+        client.V1RoleBinding(
+            metadata=client.V1ObjectMeta(name="agentapp-rolebinding", namespace=namespace),
+            role_ref=client.V1RoleRef(
+                api_group="rbac.authorization.k8s.io",
+                kind="Role",
+                name="primaza-agentapp-role"),
+            subjects=[
+                client.V1Subject(
+                    api_group="ServiceAccount",
+                    name="primaza-agentapp",
+                    namespace=namespace)
+            ])
+
+
     def __configure_primaza_user_permissions(self):
         api_client = self.get_api_client()
         rbac = client.RbacAuthorizationV1Api(api_client)
@@ -185,3 +228,10 @@ def ensure_worker_cluster_running(context, cluster_name: str, primaza_cluster_na
     primaza_cluster = context.cluster_provider.get_primaza_cluster(primaza_cluster_name)
     p_csr_pem = primaza_cluster.create_certificate_signing_request_pem()
     worker_cluster.create_primaza_user(p_csr_pem)
+
+
+@given(u'On Worker Cluster "{cluster_name}", applications namespace "{namespace}" exists')
+def ensure_application_namespace_exists(context, cluster_name: str, namespace: str):
+    worker = context.cluster_provider.workers[cluster_name] # type: WorkerCluster
+    worker.create_application_namespace(namespace)
+
