@@ -121,9 +121,9 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: test-acceptance-wip
 test-acceptance-wip: test-acceptance-setup ## Runs acceptance tests for WIP tagged scenarios
-	@(kind get clusters | grep primaza | xargs -I@ kind delete cluster --name @) || true
+	@(kind get clusters | grep 'primaza-' | xargs -I@ kind delete cluster --name @) || true
 	echo "Running work in progress acceptance tests"
-	$(PYTHON_VENV_DIR)/bin/behave --junit --junit-directory $(TEST_ACCEPTANCE_OUTPUT_DIR) --no-capture --no-capture-stderr $(TEST_ACCEPTANCE_TAGS_ARG) $(EXTRA_BEHAVE_ARGS) --wip --stop test/acceptance/features
+	$(MAKE) run-behave EXTRA_BEHAVE_ARGS="--wip --stop"
 
 ##@ Build
 
@@ -289,6 +289,9 @@ else
 TEST_ACCEPTANCE_TAGS_ARG ?= --tags="~@disabled"
 endif
 
+TEST_ACCEPTANCE_FOLDER ?= test/acceptance/features
+TEST_ACCEPTANCE_CONCURRENCY ?= 4
+
 .PHONY: setup-venv
 setup-venv: ## Setup virtual environment
 	python3 -m venv $(PYTHON_VENV_DIR)
@@ -299,15 +302,26 @@ setup-venv: ## Setup virtual environment
 test-acceptance-setup: setup-venv ## Setup the environment for the acceptance tests
 	$(PYTHON_VENV_DIR)/bin/pip install -q -r test/acceptance/features/requirements.txt
 
+.PHONY: run-behave
+run-behave: test-acceptance-setup
+	$(PYTHON_VENV_DIR)/bin/behave --junit --junit-directory $(TEST_ACCEPTANCE_OUTPUT_DIR) --no-capture --no-capture-stderr $(TEST_ACCEPTANCE_TAGS_ARG) $(EXTRA_BEHAVE_ARGS) $(TEST_ACCEPTANCE_FOLDER)
+
 .PHONY: test-acceptance
 test-acceptance: test-acceptance-setup ## Runs acceptance tests
 	@(kind get clusters | grep primaza | xargs -I@ kind delete cluster --name @) || true
 	echo "Running acceptance tests"
-	$(PYTHON_VENV_DIR)/bin/behave --junit --junit-directory $(TEST_ACCEPTANCE_OUTPUT_DIR) --no-capture --no-capture-stderr $(TEST_ACCEPTANCE_TAGS_ARG) $(EXTRA_BEHAVE_ARGS) test/acceptance/features
+	$(MAKE) run-behave
 
 .PHONY: clean
 clean: ## Removes temp directories
 	-rm -rf ${V_FLAG} $(OUTPUT_DIR)
+
+##@ CI
+
+.PHONY: test-acceptance-ci
+test-acceptance-ci: test-acceptance-setup ## Runs acceptance tests for WIP tagged scenarios
+	find -iname '*.feature' | xargs -I@ -P $(TEST_ACCEPTANCE_CONCURRENCY) sh -c 'EXTRA_BEHAVE_ARGS="-i @" $(MAKE) run-behave > /tmp/test-acceptance-logs/log-@'
+
 
 ##@ Linters
 
