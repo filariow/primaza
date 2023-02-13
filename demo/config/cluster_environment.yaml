@@ -1,0 +1,9 @@
+apiVersion: primaza.io/v1alpha1
+kind: ClusterEnvironment
+metadata:
+    name: primaza-main
+    namespace: primaza-system
+spec:
+    environmentName: demo
+    clusterContextSecret: primaza-km
+

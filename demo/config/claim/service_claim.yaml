@@ -1,0 +1,27 @@
+apiVersion: primaza.io/v1alpha1
+kind: ServiceClaim
+metadata:
+  name: bash-psql-demo
+  namespace: primaza-system
+spec:
+  name: bash-psql-demo
+  serviceClassIdentity:
+  - name: type
+    value: psqlserver
+  - name: provider
+    value: aws
+  serviceEndpointDefinitionKeys:
+  - type
+  - host
+  - port
+  - user
+  - password
+  - database
+  environmentTag: demo
+  application:
+    kind: Deployment
+    apiVersion: apps/v1
+    selector:
+      matchLabels:
+        app: bash
+

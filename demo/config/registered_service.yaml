@@ -1,0 +1,28 @@
+apiVersion: primaza.io/v1alpha1
+kind: RegisteredService
+metadata:
+  name: primaza-rsdb
+  namespace: primaza-system
+spec:
+  constraints:
+    environments:
+    - demo
+  serviceClassIdentity:
+    - name: type
+      value: psqlserver
+    - name: provider
+      value: aws
+  serviceEndpointDefinition:
+    - name: type
+      value: postgres
+    - name: host
+      value: mydavphost.io
+    - name: port
+      value: "5432"
+    - name: user
+      value: admin
+    - name: password
+      value: Sup3rsecret@
+    - name: database
+      value: master
+
