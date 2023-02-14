@@ -31,12 +31,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	primazaiov1alpha1 "github.com/primaza/primaza/api/v1alpha1"
+	"github.com/primaza/primaza/pkg/primaza/clusters"
 )
 
 // ClusterEnvironmentReconciler reconciles a ClusterEnvironment object
 type ClusterEnvironmentReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	healthchecker clusters.Healthchecker
 }
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list
@@ -154,6 +157,8 @@ func (r *ClusterEnvironmentReconciler) getKubeconfig(ctx context.Context, ce pri
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterEnvironmentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	h := clusters.NewHealthchecker()
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primazaiov1alpha1.ClusterEnvironment{}).
 		Complete(r)
