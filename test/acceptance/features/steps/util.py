@@ -36,3 +36,8 @@ def wait(context, duration):
 @step(u'1 second has passed')
 def wait_1_s(context):
     wait(context, 1)
+
+
+@step(u'fail')
+def fail(_context):
+    raise Exception("fail")

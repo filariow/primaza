@@ -1,13 +1,13 @@
-@disabled
 Feature: Publish Service Agent to worker cluster
 
+    @wip
     Scenario: On Cluster Environment creation, Primaza Service Agent is successfully deployed to services namespace
 
         Given Primaza Cluster "primaza-main" is running
         And Worker Cluster "primaza-worker" for "primaza-main" is running
         And Clusters "primaza-main" and "primaza-worker" can communicate
         And On Primaza Cluster "primaza-main", Worker "primaza-worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "primaza-worker", service namespace "services" exists
+        And On Worker Cluster "primaza-worker", service namespace "services" for ClusterEnvironment "primaza-worker" on Primaza cluster "primaza-main" exists
         When On Primaza Cluster "primaza-main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -21,7 +21,8 @@ Feature: Publish Service Agent to worker cluster
             serviceNamespaces:
             - "services"
         """
-        Then On Worker Cluster "primaza-worker", Primaza Service Agent is deployed into namespace "services"
+        Then fail
+        # Then On Worker Cluster "primaza-worker", Primaza Service Agent is deployed into namespace "services"
 
     Scenario: On Cluster Environment update, Primaza Service Agent is successfully removed from service namespace
 

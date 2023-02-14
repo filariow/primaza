@@ -1,17 +1,19 @@
-import base64
 import os
 import polling2
 import tempfile
-import time
 import yaml
 from behave import given, step
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from typing import Dict, List
-from datetime import datetime, timezone, timedelta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from steps.command import Command
 from steps.cluster import Cluster
-
+from steps.primazacluster import PrimazaCluster
 
 class WorkerCluster(Cluster):
     """
@@ -19,6 +21,9 @@ class WorkerCluster(Cluster):
     Implements functionalities for configuration of kubernetes clusters that will act as Primaza workers,
     like CertificateSigningRequest approval and Primaza CRD installation.
     """
+
+    svcIdentities = {}
+    appIdentities = {}
 
     def __init__(self, cluster_provisioner: str, cluster_name: str):
         super().__init__(cluster_provisioner, cluster_name)
@@ -67,55 +72,10 @@ class WorkerCluster(Cluster):
         Creates a CertificateSigningRequest for user primaza, approves it,
         and creates the needed roles and role bindings.
         """
-        csr = "primaza"
-        api_client = self.get_api_client()
-        certs = client.CertificatesV1Api(api_client)
-
-        # Check if CertificateSigningRequest has yet been created and approved
-        try:
-            s = certs.read_certificate_signing_request_status(name=csr)
-            if s == "Approved":
-                print(f"cluster '{self.cluster_name}' already has an approved CertificateSigningRequest '{csr}'")
-                return
-        except ApiException as e:
-            if e.reason != "Not Found":
-                raise e
-
-        # Create CertificateSigningRequest
-        v1csr = client.V1CertificateSigningRequest(
-            metadata=client.V1ObjectMeta(name="primaza"),
-            spec=client.V1CertificateSigningRequestSpec(
-                signer_name="kubernetes.io/kube-apiserver-client",
-                request=base64.b64encode(csr_pem).decode("utf-8"),
-                expiration_seconds=86400,
-                usages=["client auth"]))
-        certs.create_certificate_signing_request(v1csr)
-
-        # Approve CertificateSigningRequest
-        v1csr = certs.read_certificate_signing_request(name=csr)
-        approval_condition = client.V1CertificateSigningRequestCondition(
-            last_update_time=datetime.now(timezone.utc).astimezone(),
-            message='This certificate was approved by Acceptance tests',
-            reason='Acceptance tests',
-            type='Approved',
-            status='True')
-        v1csr.status.conditions = [approval_condition]
-        certs.replace_certificate_signing_request_approval(name="primaza", body=v1csr)
+        super().create_csr_user("primaza", csr_pem, timeout)
 
         # Configure primaza user permissions
         self.__configure_primaza_user_permissions()
-
-        # Wait for certificate emission
-        tend = datetime.now() + timedelta(seconds=timeout)
-        while datetime.now() < tend:
-            v1csr = certs.read_certificate_signing_request(name=csr)
-            status = v1csr.status
-            if hasattr(status, 'certificate') and status.certificate is not None:
-                print(f"CertificateSignignRequest '{csr}' certificate is ready")
-                return
-            print(f"CertificateSignignRequest '{csr}' certificate is not ready")
-            time.sleep(5)
-        assert False, f"Timed-out waiting CertificateSignignRequest '{csr}' certificate to become ready"
 
     def create_application_namespace(self, namespace: str):
         api_client = self.get_api_client()
@@ -298,28 +258,6 @@ class WorkerCluster(Cluster):
             ])
         rbac.create_cluster_role_binding(role_binding)
 
-    def get_csr_kubeconfig(self, certificate_key: str, csr: str) -> Dict:
-        """
-        Generates the kubeconfig for the CertificateSignignRequest `csr`.
-        The key used when creating the CSR is also needed.
-        """
-
-        # retrieve primaza's certificate
-        api_client = self.get_api_client()
-        certs = client.CertificatesV1Api(api_client)
-        v1csr = certs.read_certificate_signing_request(name=csr)
-        certificate = v1csr.status.certificate
-
-        # building kubeconfig
-        kubeconfig = self.cluster_provisioner.kubeconfig(internal=True)
-        kcd = yaml.safe_load(kubeconfig)
-        kcd["contexts"][0]["context"]["user"] = csr
-        kcd["users"][0]["name"] = csr
-        kcd["users"][0]["user"]["client-key-data"] = base64.b64encode(certificate_key.encode("utf-8")).decode("utf-8")
-        kcd["users"][0]["user"]["client-certificate-data"] = certificate  # yet in base64 encoding
-
-        return kcd
-
     def get_primaza_user_kubeconfig(self, certificate_key: str) -> Dict:
         """
         Generates the kubeconfig for the CertificateSignignRequest "primaza".
@@ -359,6 +297,43 @@ class WorkerCluster(Cluster):
 
         appsv1.read_namespaced_deployment(name="primaza-controller-agentsvc", namespace=namespace)
         return True
+
+    def get_or_create_service_certificate(self, namespace: str) -> RSAPrivateKey:
+        cert = self.svcIdentities.get(namespace, None)
+        if cert is not None:
+            return cert
+
+        cert = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        self.svcIdentities[namespace] = cert
+        return cert
+
+    def create_certificate_signing_request_pem(self, certificate: RSAPrivateKey) -> bytes:
+        c = self.__create_certificate_signing_request(certificate)
+        return c.public_bytes(serialization.Encoding.PEM)
+
+    def __create_certificate_signing_request(self, certificate: RSAPrivateKey):
+        # Generate RSA Key and CertificateSignignRequest
+        return x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u""),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, u""),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'primaza'),
+            x509.NameAttribute(NameOID.COMMON_NAME, u'primaza'),
+        ])).add_extension(
+            x509.SubjectAlternativeName([x509.DNSName(u"primaza.io")]),
+            critical=False,
+        ).sign(certificate, hashes.SHA256())
+
+    def create_svc_agent_secret(self, namespace: str, kubeconfig: str):
+        api_client = self.get_api_client()
+        corev1 = client.CoreV1Api(api_client)
+
+        print("kubeconfig", kubeconfig)
+
+        secret = client.V1Secret(
+            metadata=client.V1ObjectMeta(name="primaza-service-agent"),
+            string_data={"kubeconfig": kubeconfig})
+        corev1.create_namespaced_secret(namespace=namespace, body=secret)
 
 
 # Behave steps
@@ -406,10 +381,27 @@ def application_agent_is_not_deployed(context, cluster_name: str, namespace: str
         timeout=30)
 
 
-@given(u'On Worker Cluster "{cluster_name}", service namespace "{namespace}" exists')
-def ensure_service_namespace_exists(context, cluster_name: str, namespace: str):
+@given(u'On Worker Cluster "{cluster_name}", service namespace "{namespace}" for ClusterEnvironment "{ce_name}" on Primaza cluster "{primaza_cluster}" exists')
+def ensure_service_namespace_exists(context, cluster_name: str, namespace: str, ce_name: str, primaza_cluster: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
     worker.create_service_namespace(namespace)
+
+    primaza = context.cluster_provider.get_primaza_cluster(primaza_cluster)  # type: PrimazaCluster
+
+    cert = worker.get_or_create_service_certificate(namespace)
+    cert_pk_pem = cert.private_bytes(
+            format=serialization.PrivateFormat.PKCS8,
+            encoding=serialization.Encoding.PEM,
+            encryption_algorithm=serialization.NoEncryption()).decode("utf-8")
+
+    csr_pem = worker.create_certificate_signing_request_pem(cert)
+
+    csr = "primaza-"+ce_name+"-"+namespace
+    primaza.create_csr_user(csr, csr_pem)
+    kubeconfig = primaza.get_csr_kubeconfig(certificate_key=cert_pk_pem, csr=csr)
+
+    kcfg_yaml = yaml.safe_dump(kubeconfig)
+    worker.create_svc_agent_secret(namespace, kcfg_yaml)
 
 
 @step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent is deployed into namespace "{namespace}"')
