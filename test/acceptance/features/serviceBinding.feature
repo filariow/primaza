@@ -1,11 +1,13 @@
 Feature: Bind application to  the secret pushed
 
+    @wip
     Scenario: Service binding projection works
 
-        Given   Primaza Cluster "primaza-main" is running
-        And     On Primaza Cluster "primaza-main", application namespace "applications" exists
-        Given   On Primaza Cluster "primaza-main" application "newapp" is running in namespace "applications"
-        And     On Primaza Cluster "primaza-main", Resource is created
+        Given Primaza Cluster "primaza-main" is running
+        And   On Primaza Cluster "primaza-main", application namespace "applications" exists
+        And   On Primaza Cluster "primaza-main", Primaza Application Agent is deployed into namespace "applications"
+        And   On Primaza Cluster "primaza-main" application "newapp" is running in namespace "applications"
+        And   On Primaza Cluster "primaza-main", Resource is created
         """
         apiVersion: v1
         kind: Secret

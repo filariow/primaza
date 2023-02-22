@@ -33,7 +33,6 @@ import (
 
 	primazaiov1alpha1 "github.com/primaza/primaza/api/v1alpha1"
 	"github.com/primaza/primaza/controllers"
-	agentapp "github.com/primaza/primaza/controllers/agents/app"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -119,13 +118,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&agentapp.ServiceBindingReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ServiceBinding")
-		os.Exit(1)
-	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

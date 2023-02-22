@@ -344,30 +344,6 @@ class WorkerCluster(Cluster):
         """
         return self.get_user_kubeconfig_yaml(certificate_key, "primaza")
 
-    def is_app_agent_deployed(self, namespace: str) -> bool:
-        api_client = self.get_api_client()
-        appsv1 = client.AppsV1Api(api_client)
-
-        appsv1.read_namespaced_deployment(name="controller-agentapp", namespace=namespace)
-        return True
-
-    def is_svc_agent_deployed(self, namespace: str) -> bool:
-        api_client = self.get_api_client()
-        appsv1 = client.AppsV1Api(api_client)
-
-        appsv1.read_namespaced_deployment(name="controller-agentsvc", namespace=namespace)
-        return True
-
-    def deploy_agentapp(self, namespace: str):
-        """
-        Deploys Application Agent into a cluster's namespace
-        """
-
-    def deploy_agentsvc(self, namespace: str):
-        """
-        Deploys the Service Agent into a cluster's namespace
-        """
-
 
 # Behave steps
 @given('Worker Cluster "{cluster_name}" for "{primaza_cluster_name}" is running')

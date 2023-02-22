@@ -1,3 +1,4 @@
+import polling2
 import yaml
 from behave import given
 from cryptography import x509
@@ -84,6 +85,7 @@ class PrimazaCluster(Cluster):
         pass
 
 
+
 # Behave steps
 @given('Primaza Cluster "{cluster_name}" is running')
 @given('Primaza Cluster "{cluster_name}" is running with kubernetes version "{version}"')
@@ -112,3 +114,13 @@ def ensure_primaza_cluster_has_invalid_worker_clustercontext(context, primaza_cl
 
     cc_kubeconfig_yaml = yaml.safe_dump(cc_kubeconfig)
     primaza_cluster.create_clustercontext_secret(secret_name, cc_kubeconfig_yaml)
+
+
+@given(u'On Primaza Cluster "{cluster_name}", Primaza Application Agent is deployed into namespace "{namespace}"')
+def application_agent_is_deployed(context, cluster_name: str, namespace: str):
+    primaza = context.cluster_provider.get_primaza_cluster(cluster_name)  # type: PrimazaCluster
+    primaza.deploy_agentapp(namespace)
+    polling2.poll(
+        target=lambda: primaza.is_app_agent_deployed(namespace),
+        step=1,
+        timeout=30)
