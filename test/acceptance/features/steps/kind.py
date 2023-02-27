@@ -53,6 +53,18 @@ nodes:
     apiServer:
       extraArgs:
         anonymous-auth: "true"
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
   {image}
 """
         print(kind_config)
@@ -183,6 +195,26 @@ class PrimazaKind(PrimazaCluster):
         print(out)
         assert err == 0, f"error deploying Agent app's controller into cluster {self.cluster_name}"
 
+    def install_nginx_ingress(self):
+        kubeconfig = self.cluster_provisioner.kubeconfig()
+        with tempfile.NamedTemporaryFile(prefix=f"kubeconfig-{self.cluster_name}-") as t:
+            t.write(kubeconfig.encode("utf-8"))
+            t.flush()
+
+            cmd = """
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml && \
+until kubectl wait --namespace ingress-nginx \
+    --for=condition=ready pod \
+    --selector=app.kubernetes.io/component=controller \
+    --timeout=90s; do echo "waiting for nginx ingress"; sleep 5; done
+"""
+            out, err = Command() \
+                .setenv("HOME", os.getenv("HOME")) \
+                .setenv("USER", os.getenv("USER")) \
+                .setenv("KUBECONFIG", t.name) \
+                .setenv("GOCACHE", os.getenv("GOCACHE", "/tmp/gocache")) \
+                .setenv("GOPATH", os.getenv("GOPATH", "/tmp/go")) \
+                .run(cmd)
 
 class WorkerKind(WorkerCluster):
     __agentapp_loaded: bool = False

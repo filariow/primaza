@@ -41,3 +41,30 @@ class Cluster(object):
         Returns the cluster admin kubeconfig
         """
         return self.cluster_provisioner.kubeconfig(internal)
+
+    def install_vault(self):
+        kubeconfig = self.cluster_provisioner.kubeconfig()
+        with tempfile.NamedTemporaryFile(prefix=f"kubeconfig-{self.cluster_name}-") as t:
+            t.write(kubeconfig.encode("utf-8"))
+            t.flush()
+
+            cmd = """
+helm repo add hashicorp https://helm.releases.hashicorp.com && \
+    helm repo update && \
+    helm install vault hashicorp/vault --set "injector.enabled=false" --set "server.dev.enabled=true" && \
+    until [ "$(kubectl get pods vault-0 --output=jsonpath='{.status.phase}')" = "Running" ]; do echo "waiting for pod vault-0 to have status 'Running'"; sleep 5; done && \
+    kubectl exec vault-0 -- vault secrets enable -path=internal kv-v2 && \
+    kubectl apply -f test/acceptance/resources/vault_ingress.yaml
+"""
+            out, err = Command() \
+                .setenv("HOME", os.getenv("HOME")) \
+                .setenv("USER", os.getenv("USER")) \
+                .setenv("KUBECONFIG", t.name) \
+                .setenv("GOCACHE", os.getenv("GOCACHE", "/tmp/gocache")) \
+                .setenv("GOPATH", os.getenv("GOPATH", "/tmp/go")) \
+                .run(cmd)
+
+    def install_nginx_ingress(self):
+        """
+        install NGINX ingress controller in the cluster
+        """

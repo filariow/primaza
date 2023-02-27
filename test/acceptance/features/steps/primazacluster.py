@@ -208,3 +208,11 @@ def application_agent_is_deployed(context, cluster_name: str, namespace: str):
         target=lambda: primaza_cluster.is_app_agent_deployed(namespace),
         step=1,
         timeout=30)
+
+
+@step(u'On Primaza Cluster "{primaza_cluster_name}", vault is installed')
+def on_primaza_cluster_vault_is_installed(context, primaza_cluster_name: str):
+    primaza_cluster = context.cluster_provider.get_primaza_cluster(primaza_cluster_name)
+
+    primaza_cluster.install_nginx_ingress()
+    primaza_cluster.install_vault()
