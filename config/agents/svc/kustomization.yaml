@@ -3,4 +3,7 @@ kind: Kustomization
 resources:
 - rbac/
 - agentsvc.yaml
-
+images:
+- name: controller
+  newName: agentsvc
+  newTag: latest

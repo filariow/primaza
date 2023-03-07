@@ -221,15 +221,16 @@ func (r *ServiceClassReconciler) getPrimazaKubeconfig(ctx context.Context, names
 		return nil, "", fmt.Errorf("Field \"kubeconfig\" field in secret %s:%s does not exist", s.Name, s.Namespace)
 	}
 
-	if _, found := s.Data["namespace"]; !found {
-		return nil, "", fmt.Errorf("Field \"namespace\" field in secret %s:%s does not exist", s.Name, s.Namespace)
+	ns := "primaza-system"
+	if n, found := s.Data["namespace"]; found {
+		ns = string(n)
 	}
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(s.Data["kubeconfig"])
 	if err != nil {
 		return nil, "", err
 	}
-	return restConfig, string(s.Data["namespace"]), nil
+	return restConfig, ns, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

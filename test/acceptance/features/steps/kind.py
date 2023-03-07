@@ -192,6 +192,7 @@ class WorkerKind(WorkerCluster):
             return
 
         self.__load_agentapp_image()
+        self.__load_image("bash:latest")
 
         self.__agentapp_loaded = True
 
@@ -204,6 +205,7 @@ class WorkerKind(WorkerCluster):
             return
 
         self.__load_agentsvc_image()
+        self.__load_image("postgres:13")
 
         self.__agentsvc_loaded = True
 

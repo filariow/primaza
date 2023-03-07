@@ -1,3 +1,4 @@
 resources:
 - ../../bases/primaza.io_serviceclasses.yaml
+- ../../bases/primaza.io_registeredservices.yaml
 
