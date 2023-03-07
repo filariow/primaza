@@ -31,6 +31,15 @@ import (
 
 var ErrSecretNotFound = fmt.Errorf("Cluster Context Secret not found")
 
+func GetClient(ctx context.Context, cli client.Client, secretNamespace, secretName string) (client.Client, error) {
+	cfg, err := GetClusterRESTConfig(ctx, cli, secretNamespace, secretName)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.New(cfg, client.Options{})
+}
+
 func GetClusterRESTConfig(ctx context.Context, cli client.Client, secretNamespace, secretName string) (*rest.Config, error) {
 	s, err := getSecret(ctx, cli, secretNamespace, secretName)
 	if err != nil {

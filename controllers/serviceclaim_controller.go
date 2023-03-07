@@ -18,16 +18,14 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,6 +33,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/primaza/primaza/api/v1alpha1"
 	primazaiov1alpha1 "github.com/primaza/primaza/api/v1alpha1"
+	"github.com/primaza/primaza/pkg/primaza/clustercontext"
 	"github.com/primaza/primaza/pkg/slices"
 )
 
@@ -42,15 +41,12 @@ import (
 type ServiceClaimReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	Mapper meta.RESTMapper
 }
 
 //+kubebuilder:rbac:groups=primaza.io,resources=serviceclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=primaza.io,resources=serviceclaims/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=primaza.io,resources=serviceclaims/finalizers,verbs=update
-
-// TODO: Remove this later once Primaza ServiceBinding is implemented.
-//+kubebuilder:rbac:groups=servicebinding.io,resources=servicebindings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -65,34 +61,53 @@ func (r *ServiceClaimReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	l := log.FromContext(ctx)
 
 	l.Info("starting reconciliation")
+	defer l.Info("reconciliation ended")
 
 	var sclaim primazaiov1alpha1.ServiceClaim
-
 	if err := r.Get(ctx, req.NamespacedName, &sclaim); err != nil {
 		l.Info("unable to retrieve ServiceClaim", "error", err)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	switch sclaim.Status.State {
+	case "":
+		sclaim.Status.ClaimID = uuid.New().String()
+		l.Info("reconciling new service claim")
+		return ctrl.Result{}, r.processPendingClaim(ctx, req, sclaim)
+	case primazaiov1alpha1.ServiceClaimStatePending:
+		l.Info("reconciling pending service claim")
+		return ctrl.Result{}, r.processPendingClaim(ctx, req, sclaim)
+	default:
+		l.Info("reconciling resolved service claim")
+		return ctrl.Result{}, nil
+	}
+
+}
+
+func (r *ServiceClaimReconciler) processPendingClaim(ctx context.Context, req ctrl.Request, sclaim primazaiov1alpha1.ServiceClaim) error {
+	l := log.FromContext(ctx)
+
 	var rsl primazaiov1alpha1.RegisteredServiceList
 	lo := client.ListOptions{Namespace: req.NamespacedName.Namespace}
 	if err := r.List(ctx, &rsl, &lo); err != nil {
 		l.Info("unable to retrieve RegisteredServiceList", "error", err)
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return client.IgnoreNotFound(err)
 	}
 
 	rsName, err := r.processServiceClaim(ctx, req, rsl, sclaim)
 	if err != nil {
 		l.Error(err, "unable while processing ServiceClaim")
-		return ctrl.Result{}, err
+		return err
 	}
+
 	sclaim.Status.State = "Resolved"
-	sclaim.Status.ClaimID = uuid.New().String()
 	sclaim.Status.RegisteredService = rsName
+	l.Info("setting ServiceClaim to resolved", "ServiceClaim", sclaim)
 	if err := r.Status().Update(ctx, &sclaim); err != nil {
 		l.Error(err, "unable to update the ServiceClaim", "ServiceClaim", sclaim)
-		return ctrl.Result{}, err
+		return err
 	}
-	return ctrl.Result{}, nil
+	return nil
 }
 
 // Ref. https://stackoverflow.com/a/18879994/547840
@@ -179,7 +194,7 @@ func (r *ServiceClaimReconciler) processServiceClaim(
 			registeredServiceFound = true
 			// loop over the environments given in the constraints part of the RegisteredService
 			for _, e := range rs.Spec.Constraints.Environments {
-				// check if the EnvironmentTag of ServiceClaim matches tat of the environment constraint
+				// check if the EnvironmentTag of ServiceClaim matches that of the environment constraint
 				if sclaim.Spec.EnvironmentTag == e {
 					var err error
 					rsName, count, err = r.extractServiceEndpointDefinition(ctx, req, rs, sclaim.Spec.ServiceEndpointDefinitionKeys, secret)
@@ -194,6 +209,7 @@ func (r *ServiceClaimReconciler) processServiceClaim(
 	}
 	if !registeredServiceFound {
 		sclaim.Status.State = "Pending"
+		l.Info("1 - setting ServiceClaim to pending", "ServiceClaim", sclaim)
 		if err := r.Status().Update(ctx, &sclaim); err != nil {
 			l.Error(err, "unable to update the ServiceClaim", "ServiceClaim", sclaim)
 			return "", err
@@ -206,6 +222,7 @@ func (r *ServiceClaimReconciler) processServiceClaim(
 	// that indicates one or more keys are missing
 	if len(sclaim.Spec.ServiceEndpointDefinitionKeys) > count {
 		sclaim.Status.State = "Pending"
+		l.Info("2 - setting ServiceClaim to pending", "ServiceClaim", sclaim)
 		if err := r.Status().Update(ctx, &sclaim); err != nil {
 			l.Error(err, "unable to update the ServiceClaim", "ServiceClaim", sclaim)
 			return "", err
@@ -242,73 +259,97 @@ func (r *ServiceClaimReconciler) pushToClusterEnvironments(
 	sclaim primazaiov1alpha1.ServiceClaim,
 	secret *corev1.Secret,
 ) error {
+	l := log.FromContext(ctx)
+
+	errs := []error{}
 	// loop over all ClusterEnvironment
 	for _, ce := range cel.Items {
 		// check if the ServiceClaim EnvironmentTag matches the EnvironmentName part of ClusterEnvironment
-		if sclaim.Spec.EnvironmentTag != ce.Spec.EnvironmentName {
+		if ce.Spec.EnvironmentName != sclaim.Spec.EnvironmentTag {
+			l.Info("cluster environment is NOT matching environment", "cluster environment", ce, "environment tag", sclaim.Spec.EnvironmentTag)
 			continue
 		}
-		sn := ce.Spec.ClusterContextSecret
-		k := client.ObjectKey{Namespace: ce.Namespace, Name: sn}
-		var s corev1.Secret
-		if err := r.Get(ctx, k, &s); err != nil {
+
+		l.Info("cluster environment is matching environment", "cluster environment", ce, "environment tag", sclaim.Spec.EnvironmentTag)
+		if err := r.pushServiceBinding(ctx, &sclaim, &ce, secret); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func (r *ServiceClaimReconciler) pushServiceBinding(
+	ctx context.Context,
+	sc *primazaiov1alpha1.ServiceClaim,
+	ce *primazaiov1alpha1.ClusterEnvironment,
+	secret *corev1.Secret) error {
+	l := log.FromContext(ctx)
+
+	cfg, err := clustercontext.GetClusterRESTConfig(ctx, r.Client, ce.Namespace, ce.Spec.ClusterContextSecret)
+	if err != nil {
+		return err
+	}
+
+	oc := client.Options{
+		Scheme: r.Scheme,
+		Mapper: r.Mapper,
+	}
+	cecli, err := client.New(cfg, oc)
+	if err != nil {
+		return err
+	}
+
+	errs := []error{}
+	l.Info("pushing to application namespaces", "application namespaces", ce.Spec.ApplicationNamespaces)
+	for _, ns := range ce.Spec.ApplicationNamespaces {
+		l.Info("pushing to application namespace", "application namespace", ns)
+		if err := r.pushServiceBindingToNamespace(ctx, cecli, ns, sc, secret); err != nil {
+			errs = append(errs, err)
+			l.Error(err, "error pushing to application namespaces", "application namespace", ns)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func (r *ServiceClaimReconciler) pushServiceBindingToNamespace(
+	ctx context.Context,
+	cli client.Client,
+	namespace string,
+	sc *primazaiov1alpha1.ServiceClaim,
+	secret *corev1.Secret) error {
+	l := log.FromContext(ctx)
+
+	s := *secret
+	s.Namespace = namespace
+	l.Info("creating secret for service claim", "secret", s, "service claim", sc)
+	if err := cli.Create(ctx, &s, &client.CreateOptions{}); err != nil {
+		l.Error(err, "error creating secret for service claim", "secret", s, "service claim", sc)
+		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+	}
 
-		kubeconfig := s.Data["kubeconfig"]
-		cg, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
-		if err != nil {
+	sb := primazaiov1alpha1.ServiceBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      sc.Name,
+			Namespace: namespace,
+		},
+		Spec: primazaiov1alpha1.ServiceBindingSpec{
+			ServiceEndpointDefinitionSecret: sc.Name,
+			Application:                     sc.Spec.Application,
+		},
+	}
+
+	if err := cli.Create(ctx, &sb, &client.CreateOptions{}); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
-
-		cs, err := kubernetes.NewForConfig(cg)
-		if err != nil {
-			return err
-		}
-
-		_, err = cs.CoreV1().Secrets(ce.Namespace).Create(ctx, secret, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-
-		dynamicClient, err := dynamic.NewForConfig(cg)
-		if err != nil {
-			return err
-		}
-
-		sb := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"kind":       "ServiceBinding",
-				"apiVersion": "servicebinding.io/v1beta1",
-				"metadata": map[string]interface{}{
-					"name":      req.NamespacedName.Name,
-					"namespace": req.NamespacedName.Namespace,
-				},
-				"spec": map[string]interface{}{
-					"service": map[string]interface{}{
-						"apiVersion": "v1",
-						"kind":       "Secret",
-						"name":       req.NamespacedName.Name,
-					},
-					"workload": map[string]interface{}{
-						"apiVersion": sclaim.Spec.Application.APIVersion,
-						"kind":       sclaim.Spec.Application.Kind,
-						"selector": map[string]interface{}{
-							"matchLabels": sclaim.Spec.Application.Selector.MatchLabels,
-						},
-					},
-				},
-			}}
-		gvr := schema.GroupVersionResource{
-			Group:    "servicebinding.io",
-			Version:  "v1beta1",
-			Resource: "servicebindings",
-		}
-		_, err = dynamicClient.Resource(gvr).Namespace(req.NamespacedName.Namespace).Create(ctx, sb, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-
 	}
 	return nil
 }
