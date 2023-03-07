@@ -178,6 +178,7 @@ class PrimazaKind(PrimazaCluster):
 
 class WorkerKind(WorkerCluster):
     __agentapp_loaded: bool = False
+    __agentsvc_loaded: bool = False
 
     def __init__(self, cluster_name, version=None):
         super().__init__(KindClusterProvisioner(cluster_name, version), cluster_name)
@@ -194,9 +195,25 @@ class WorkerKind(WorkerCluster):
 
         self.__agentapp_loaded = True
 
+    def create_service_namespace(self, namespace: str):
+        self.configure_service_cluster()
+        super().create_service_namespace(namespace)
+
+    def configure_application_cluster(self):
+        if self.__agentsvc_loaded:
+            return
+
+        self.__load_agentsvc_image()
+
+        self.__agentsvc_loaded = True
+
     def __load_agentapp_image(self):
         cmd = f'make agentapp docker-build && kind load docker-image --name {self.cluster_name} $IMG'
         output, exit_code = Command().setenv("IMG", "agentapp:latest").run(cmd)
+
+    def __load_agentsvc_image(self):
+        cmd = f'make agentsvc docker-build && kind load docker-image --name {self.cluster_name} $IMG'
+        output, exit_code = Command().setenv("IMG", "agentsvc:latest").run(cmd)
 
     def __load_image(self, image: str):
         cmd = f' kind load docker-image --name {self.cluster_name} $IMG'
