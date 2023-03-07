@@ -9,7 +9,6 @@ Feature: Setup Multicluster environment
         And On Primaza Cluster "primaza-main", Worker "primaza-worker"'s ClusterContext secret "primaza-kw" is published
         And On Worker Cluster "primaza-worker", application namespace "applications" exists
         And On Worker Cluster "primaza-worker", service namespace "services" exists
-        And fail
         When On Primaza Cluster "primaza-main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -18,7 +17,7 @@ Feature: Setup Multicluster environment
             name: primaza-worker
             namespace: primaza-system
         spec:
-            environmentName: dev
+            environmentName: demo
             clusterContextSecret: primaza-kw
             applicationNamespaces:
             - "applications"
@@ -27,3 +26,4 @@ Feature: Setup Multicluster environment
         """
         Then On Worker Cluster "primaza-worker", Primaza Application Agent is deployed into namespace "applications"
         Then On Worker Cluster "primaza-worker", Primaza Service Agent is deployed into namespace "services"
+        And fail

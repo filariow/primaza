@@ -14,6 +14,7 @@ RUN go mod download
 # Copy the go source
 COPY cmd/agents/svc/ cmd/agents/svc/
 COPY api/ api/
+COPY pkg/ pkg/
 COPY controllers/ controllers/
 
 # Build

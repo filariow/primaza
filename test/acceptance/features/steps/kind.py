@@ -199,7 +199,7 @@ class WorkerKind(WorkerCluster):
         self.configure_service_cluster()
         super().create_service_namespace(namespace)
 
-    def configure_application_cluster(self):
+    def configure_service_cluster(self):
         if self.__agentsvc_loaded:
             return
 

@@ -133,14 +133,13 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
             drop:
             - ALL
-        volumeMounts:
-        - mountPath: /tmp/k8s-webhook-server/serving-certs
-          name: cert
-          readOnly: true
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: primaza-controller-agentsvc
+      serviceAccountName: primaza-agentsvc
       terminationGracePeriodSeconds: 10
 `
