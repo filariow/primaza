@@ -140,6 +140,6 @@ spec:
             - ALL
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: primaza-agentsvc
+      serviceAccountName: primaza-controller-agentsvc
       terminationGracePeriodSeconds: 10
 `

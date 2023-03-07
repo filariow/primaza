@@ -144,21 +144,25 @@ class WorkerCluster(Cluster):
                 verbs=["get", "list", "watch", "update", "patch"]),
             client.V1PolicyRule(
                 api_groups=["primaza.io"],
-                resources=["servicebindings", "serviceclaims"],
-                verbs=["get", "list", "watch"])
+                resources=["serviceclaims"],
+                verbs=["get", "list", "watch"]),
+            client.V1PolicyRule(
+                api_groups=["primaza.io"],
+                resources=["servicebindings", "servicebinding/status"],
+                verbs=["get", "list", "watch", "update", "patch"])
         ]
         self.__create_agent_identity(namespace, "agentapp", rules)
 
     def __create_service_agent_identity(self, namespace: str):
         rules = [
             client.V1PolicyRule(
+                api_groups=["apps"],
+                resources=["deployments"],
+                verbs=["get", "list"]),
+            client.V1PolicyRule(
                 api_groups=["primaza.io"],
                 resources=["serviceclasses"],
-                verbs=["get", "list", "watch"]),
-            client.V1PolicyRule(
-                api_groups=[""],
-                resources=["secrets"],
-                verbs=["get", "list"]),
+                verbs=["get", "list", "watch"])
         ]
         self.__create_agent_identity(namespace, "agentsvc", rules)
 
@@ -211,7 +215,11 @@ class WorkerCluster(Cluster):
                 client.V1PolicyRule(
                     api_groups=[""],
                     resources=["events"],
-                    verbs=["create", "patch"])
+                    verbs=["create", "patch"]),
+                client.V1PolicyRule(
+                    api_groups=[""],
+                    resources=["secrets"],
+                    verbs=["get", "list"])
             ] + rules)
         rbacv1.create_namespaced_role(namespace, r)
 

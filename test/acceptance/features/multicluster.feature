@@ -72,6 +72,7 @@ Feature: Setup Multicluster environment
                 - sleep
                 - infinite
         """
+        And Fail
         And On Primaza Cluster "primaza-main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -118,12 +119,12 @@ Feature: Setup Multicluster environment
             - name: provider
               value: hosted
         """
-        And On Primaza Cluster "primaza-main", Resource is created
+        When On Primaza Cluster "primaza-main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
         kind: ServiceClaim
         metadata:
-          name: sc-test
+          name: demo-app-psql
           namespace: primaza-system
         spec:
           serviceClassIdentity:
@@ -144,5 +145,5 @@ Feature: Setup Multicluster environment
               matchLabels:
                 app: demo-app
         """
-        When fail
-        Then fail
+        Then  On Worker Cluster "primaza-worker", ServiceBinding "demo-app-psql" on namespace "applications" state will eventually move to "Ready"
+        And   On Worker Cluster "primaza-worker", in pods with label "app=demo-app" running in namespace "applications" file "/bindings/demo-app-psql/password" has content "Sup3rSecret!"

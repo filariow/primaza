@@ -370,8 +370,11 @@ spec:
         assert exit_code == 0, f"Condition {condition}={value} for {resource}/{name} in {namespace} namespace was not met\n: {output}"
 
     def check_file_content_from_myapp(self, namespace, file_path):
+        return self.check_file_content_in_pods_by_label(namespace, file_path, "app=myapp")
+
+    def check_file_content_in_pods_by_label(self, namespace, file_path, label):
         output, exit_code = self.cmd.run(
-            f'{ctx.cli} exec $({ctx.cli} get pod -l app=myapp -n {namespace} -o name) -n {namespace} -- cat {file_path}')
+            f'{ctx.cli} exec $({ctx.cli} get pod -l {label} -n {namespace} -o name) -n {namespace} -- cat {file_path}')
         return output
 
     def file_exists_in_myapp(self, namespace, file_path):
@@ -624,6 +627,15 @@ def on_worker_cluster_check_file_available(context, cluster, file_path, namespac
         tf.write(kubeconfig.encode("utf-8"))
         tf.flush()
         polling2.poll(lambda: Kubernetes(kubeconfig=tf.name).check_file_content_from_myapp(namespace, file_path) == content, step=20, timeout=120)
+
+
+@step(u'On Worker Cluster "{cluster}", in pods with label "{label}" running in namespace "{namespace}" file "{file_path}" has content "{content}"')
+def on_worker_cluster_check_file_available_by_label(context, cluster, label, file_path, namespace, content):
+    with tempfile.NamedTemporaryFile() as tf:
+        kubeconfig = context.cluster_provider.get_worker_cluster(cluster).get_admin_kubeconfig()
+        tf.write(kubeconfig.encode("utf-8"))
+        tf.flush()
+        polling2.poll(lambda: Kubernetes(kubeconfig=tf.name).check_file_content_in_pods_by_label(namespace, file_path, label) == content, step=20, timeout=120)
 
 
 @then(u'On Worker Cluster "{cluster_name}", Resource "{resource_type}" with name "{resource_name}" exists in namespace "{namespace}"')
