@@ -51,7 +51,7 @@ func GetAgentSvcRequiredPermissions(clusterEnvironmentName string) []authz.Resou
 			Version:  "",
 			Group:    "apps",
 			Resource: "deployments",
-			Name:     "primaza-controller-agentsvc",
+			Name:     "pmz-svc" + clusterEnvironmentName,
 		},
 	}
 }

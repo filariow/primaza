@@ -6,7 +6,7 @@ Feature: Cleanup service namespace
         And Clusters "main" and "worker" can communicate
         And   On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
         And On Worker Cluster "worker", service namespace "services" exists
-        And On Worker Cluster "worker", Primaza Service Agent is deployed into namespace "services"
+        And On Worker Cluster "worker", Primaza Service Agent for ClusterEnvironment "worker" is deployed into namespace "services"
         And Primaza cluster's "main" kubeconfig is available on "worker" in namespace "services"
         And Resource "backend_crd.yaml" is installed on worker cluster "worker" in namespace "services"
         And   On Primaza Cluster "main", Resource is created

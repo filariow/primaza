@@ -88,10 +88,6 @@ metadata:
   name: primaza-controller-agentapp
   labels:
     control-plane: primaza-controller-agentapp
-    app.kubernetes.io/name: deployment
-    app.kubernetes.io/instance: primaza-controller-agentapp
-    app.kubernetes.io/component: agentapp-manager
-    app.kubernetes.io/created-by: primaza
     app.kubernetes.io/part-of: primaza
 spec:
   selector:

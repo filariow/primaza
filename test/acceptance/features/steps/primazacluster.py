@@ -103,11 +103,11 @@ class PrimazaCluster(Cluster):
         appsv1.read_namespaced_deployment(name=f"pmz-app-{cluster_environment}", namespace=namespace)
         return True
 
-    def is_svc_agent_deployed(self, namespace: str) -> bool:
+    def is_svc_agent_deployed(self, namespace: str, cluster_environment: str) -> bool:
         api_client = self.get_api_client()
         appsv1 = client.AppsV1Api(api_client)
 
-        appsv1.read_namespaced_deployment(name="primaza-controller-agentsvc", namespace=namespace)
+        appsv1.read_namespaced_deployment(name=f"pmz-svc-{cluster_environment}", namespace=namespace)
         return True
 
     def deploy_agentapp(self, namespace: str, cluster_environment: str):
@@ -178,12 +178,12 @@ def ensure_secret_key_has_the_right_value(context, primaza_cluster_name: str, se
         timeout=30)
 
 
-@step(u'On Primaza Cluster "{cluster_name}", Primaza Service Agent is deployed into namespace "{namespace}"')
-def service_agent_is_deployed(context, cluster_name: str, namespace: str):
+@step(u'On Primaza Cluster "{cluster_name}", Primaza Service Agent for ClusterEnvironment "{ce_name}" is deployed into namespace "{namespace}"')
+def service_agent_is_deployed(context, cluster_name: str, ce_name: str, namespace: str):
     primaza_cluster = context.cluster_provider.get_primaza_cluster(cluster_name)  # type: PrimazaCluster
     primaza_cluster.deploy_agentsvc(namespace)
     polling2.poll(
-        target=lambda: primaza_cluster.is_svc_agent_deployed(namespace),
+        target=lambda: primaza_cluster.is_svc_agent_deployed(namespace, ce_name),
         step=1,
         timeout=30)
 

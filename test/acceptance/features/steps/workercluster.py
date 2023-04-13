@@ -165,7 +165,7 @@ class WorkerCluster(Cluster):
                     api_groups=["apps"],
                     resources=["deployments"],
                     verbs=["delete"],
-                    resource_names=[f"pmz-app-{cluster_environment}", "primaza-controller-agentsvc"]),
+                    resource_names=[f"pmz-app-{cluster_environment}", f"pmz-svc-{cluster_environment}"]),
                 client.V1PolicyRule(
                     api_groups=["primaza.io"],
                     resources=["servicebindings", "serviceclasses", "servicecatalogs"],
@@ -191,8 +191,8 @@ class WorkerCluster(Cluster):
     def __create_application_agent_identity(self, namespace: str, cluster_environment: str):
         self.__create_agent_identity(namespace, "agentapp", cluster_environment)
 
-    def __create_service_agent_identity(self, namespace: str):
-        self.__create_agent_identity(namespace, "agentsvc")
+    def __create_service_agent_identity(self, namespace: str, cluster_environment: str):
+        self.__create_agent_identity(namespace, "agentsvc", cluster_environment)
 
     def __create_agent_identity(self, namespace: str, component: str, cluster_environment: str = "default"):
         kubeconfig = self.cluster_provisioner.kubeconfig()
@@ -302,11 +302,11 @@ class WorkerCluster(Cluster):
         appsv1.read_namespaced_deployment(name=f"pmz-app-{cluster_environment}", namespace=namespace)
         return True
 
-    def is_svc_agent_deployed(self, namespace: str) -> bool:
+    def is_svc_agent_deployed(self, namespace: str, cluster_environment: str) -> bool:
         api_client = self.get_api_client()
         appsv1 = client.AppsV1Api(api_client)
 
-        appsv1.read_namespaced_deployment(name="primaza-controller-agentsvc", namespace=namespace)
+        appsv1.read_namespaced_deployment(name=f"pmz-svc-{cluster_environment}", namespace=namespace)
         return True
 
     def deploy_agentapp(self, namespace: str, cluster_environment: str):
@@ -397,38 +397,38 @@ def application_agent_does_not_exist(context, cluster_name: str, ce_name: str, n
         timeout=30)
 
 
-@given(u'On Worker Cluster "{cluster_name}", service namespace "{namespace}" exists')
-def ensure_service_namespace_exists(context, cluster_name: str, namespace: str):
+@given(u'On Worker Cluster "{cluster_name}", service namespace "{namespace}" for ClusterEnvironment "{cluster_environment}" exists')
+def ensure_service_namespace_exists(context, cluster_name: str, namespace: str, cluster_environment: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
-    worker.create_service_namespace(namespace)
+    worker.create_service_namespace(namespace, cluster_environment)
 
 
-@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent is deployed into namespace "{namespace}"')
-def service_agent_is_deployed(context, cluster_name: str, namespace: str):
+@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent for ClusterEnvironment "{ce_name}" is deployed into namespace "{namespace}"')
+def service_agent_is_deployed(context, cluster_name: str, ce_name: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
-    worker.deploy_agentsvc(namespace)
+    worker.deploy_agentsvc(namespace, ce_name)
     polling2.poll(
-        target=lambda: worker.is_svc_agent_deployed(namespace),
+        target=lambda: worker.is_svc_agent_deployed(namespace, ce_name),
         step=1,
         timeout=30)
 
 
-@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent exists into namespace "{namespace}"')
-def service_agent_exists(context, cluster_name: str, namespace: str):
+@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent for ClusterEnvironment "{cluster_environment}" exists into namespace "{namespace}"')
+def service_agent_exists(context, cluster_name: str, cluster_environment: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
     polling2.poll(
-        target=lambda: worker.is_svc_agent_deployed(namespace),
+        target=lambda: worker.is_svc_agent_deployed(namespace, cluster_environment),
         step=1,
         timeout=30)
 
 
-@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent does not exist into namespace "{namespace}"')
+@step(u'On Worker Cluster "{cluster_name}", Primaza Service Agent for ClusterEnvironment "{ce_name}" does not exist into namespace "{namespace}"')
 def service_agent_does_not_exist(context, cluster_name: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
 
     def is_not_found():
         try:
-            worker.is_svc_agent_deployed(namespace)
+            worker.is_svc_agent_deployed(namespace, ce_name)
         except ApiException as e:
             return e.reason == "Not Found"
         return False

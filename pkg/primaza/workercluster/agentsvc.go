@@ -19,6 +19,7 @@ package workercluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,7 +36,8 @@ func DeleteServiceAgent(ctx context.Context, cli *kubernetes.Clientset, namespac
 	}
 	decode := serializer.NewCodecFactory(s).UniversalDeserializer().Decode
 
-	obj, _, err := decode([]byte(agentSvcDeployment), nil, nil)
+	ceDep := strings.ReplaceAll(agentSvcDeployment, "primaza-controller-agentsvc", "pmz-svc-"+clusterEnvironment)
+	obj, _, err := decode([]byte(ceDep), nil, nil)
 	if err != nil {
 		return fmt.Errorf("decoder error: %w", err)
 	}
@@ -63,7 +65,8 @@ func createAgentSvcDeployment(ctx context.Context, cli *kubernetes.Clientset, na
 	}
 	decode := serializer.NewCodecFactory(s).UniversalDeserializer().Decode
 
-	obj, _, err := decode([]byte(agentSvcDeployment), nil, nil)
+	ceDep := strings.ReplaceAll(agentSvcDeployment, "primaza-controller-agentsvc", "pmz-svc-"+clusterEnvironment)
+	obj, _, err := decode([]byte(ceDep), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("decoder error: %w", err)
 	}
@@ -81,11 +84,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: primaza
-    app.kubernetes.io/instance: primaza-controller-agentsvc
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: deployment
     app.kubernetes.io/part-of: primaza
     control-plane: primaza-controller-agentsvc
   name: primaza-controller-agentsvc
