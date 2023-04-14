@@ -46,7 +46,7 @@ import (
 // agents needs to write back registered services up to primaza.  It contains
 // two keys: `kubeconfig`, a serialized kubeconfig for the upstream kubeconfig
 // cluster, and `namespace`, the namespace to write registered services to
-const PRIMAZA_CONTROLLER_REFERENCE string = "primaza-kubeconfig"
+const PRIMAZA_CONTROLLER_REFERENCE string = "kubeconfig-primaza-svc"
 
 // ServiceClassReconciler reconciles a ServiceClass object
 type ServiceClassReconciler struct {
@@ -218,11 +218,11 @@ func (r *ServiceClassReconciler) HandleRegisteredServices(ctx context.Context, s
 	} else if status.State == v1alpha1.ClusterEnvironmentStateOffline {
 		state = metav1.ConditionFalse
 	}
-    meta.SetStatusCondition(&serviceClass.Status.Conditions, metav1.Condition{
-		Type:               "Connection",
-		Message:            status.Message,
-		Reason:             string(status.Reason),
-		Status:             state,
+	meta.SetStatusCondition(&serviceClass.Status.Conditions, metav1.Condition{
+		Type:    "Connection",
+		Message: status.Message,
+		Reason:  string(status.Reason),
+		Status:  state,
 	})
 	if status.State == v1alpha1.ClusterEnvironmentStateOffline {
 		return fmt.Errorf("Failed to connect to cluster")
