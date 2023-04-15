@@ -2,10 +2,10 @@ Feature: Service claim with label selector
 
     Scenario: Create a service claim with label selector
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -84,10 +84,10 @@ Feature: Service claim with label selector
 
     Scenario: Create a service claim with label selector, no constraints
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -163,10 +163,10 @@ Feature: Service claim with label selector
 
     Scenario: Create a service claim with label selector, no constraints, sci subset and sed subset
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -237,10 +237,10 @@ Feature: Service claim with label selector
 
     Scenario: Create a service claim with non-existing SED key
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -318,10 +318,10 @@ Feature: Service claim with label selector
 
     Scenario: Create a service claim with non-matching SCI
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -410,10 +410,10 @@ Feature: Service claim with label selector
 
     Scenario: Create ServiceClaim with ApplicationClusterContext and EnvironmentTag
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -491,10 +491,10 @@ Feature: Service claim with label selector
 
     Scenario: Create ServiceClaim with empty ApplicationClusterContext and EnvironmentTag
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1
@@ -568,10 +568,10 @@ Feature: Service claim with label selector
 
     Scenario: Create ServiceClaim with Application name and Application selector
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
         """
         apiVersion: primaza.io/v1alpha1

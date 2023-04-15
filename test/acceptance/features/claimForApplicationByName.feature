@@ -3,10 +3,10 @@ Feature: Claim for an Application by Name
     Scenario: Application exists with Claim for an Application by Name
 
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
  
         """
@@ -107,10 +107,10 @@ Feature: Claim for an Application by Name
     Scenario: Application does not exists with Claim for an Application by Name
 
         Given Primaza Cluster "main" is running
-        And Worker Cluster "worker" for "main" is running
+        And Worker Cluster "worker" for ClusterEnvironment "worker" is running
         And Clusters "main" and "worker" can communicate
-        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" is published
-        And On Worker Cluster "worker", application namespace "applications" exists
+        And On Primaza Cluster "main", Worker "worker"'s ClusterContext secret "primaza-kw" for ClusterEnvironment "worker" is published
+        And On Worker Cluster "worker", application namespace "applications" for ClusterEnvironment "worker" exists
         And On Primaza Cluster "main", Resource is created
  
         """
