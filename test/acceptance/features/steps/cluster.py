@@ -219,7 +219,7 @@ class Cluster(object):
                 client.V1PolicyRule(
                     api_groups=["apps"],
                     resources=["deployments"],
-                    verbs=["delete"],
+                    verbs=["delete", "get"],
                     resource_names=[f"primaza-{nstype}-agent"]),
             ] + pmz_rules)
         rbacv1.create_namespaced_role(namespace, r)

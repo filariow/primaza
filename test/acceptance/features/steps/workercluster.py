@@ -49,8 +49,9 @@ def application_agent_is_deployed(context, cluster_name: str, namespace: str):
     worker.deploy_agentapp(namespace)
     polling2.poll(
         target=lambda: worker.is_app_agent_deployed(namespace),
+        ignore_exceptions=(ApiException,),
         step=1,
-        timeout=30)
+        timeout=60)
 
 
 @step(u'On Worker Cluster "{cluster_name}", Primaza Application Agent exists into namespace "{namespace}"')
@@ -58,8 +59,9 @@ def application_agent_exists(context, cluster_name: str, namespace: str):
     worker = context.cluster_provider.get_worker_cluster(cluster_name)  # type: WorkerCluster
     polling2.poll(
         target=lambda: worker.is_app_agent_deployed(namespace),
+        ignore_exceptions=(ApiException,),
         step=1,
-        timeout=30)
+        timeout=60)
 
 
 @step(u'On Worker Cluster "{cluster_name}", Primaza Application Agent does not exist into namespace "{namespace}"')
