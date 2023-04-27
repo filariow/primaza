@@ -371,7 +371,7 @@ func PrepareRegisteredService(ctx context.Context, serviceClass v1alpha1.Service
 
 func ServiceEndpointDefinitionMapping(serviceClass v1alpha1.ServiceClass) ([]SEDMapping, error) {
 	mappings := []SEDMapping{}
-	for _, mapping := range serviceClass.Spec.Resource.ServiceEndpointDefinitionMapping {
+	for _, mapping := range serviceClass.Spec.Resource.ServiceEndpointDefinitionMappings.ResourceFields {
 		path := jsonpath.New("")
 		err := path.Parse(fmt.Sprintf("{%s}", mapping.JsonPath))
 		if err != nil {
