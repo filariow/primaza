@@ -8,6 +8,8 @@ The Primaza environment will push these resources to worker environments, where 
 
 ## Specification
 
+The definition of ServiceClasses can be obtained directly from our [ServiceClass CRD](https://github.com/primaza/primaza/blob/main/config/crd/bases/primaza.io_serviceclasses.yaml).
+
 Within a Service Class, there are two required properties:
 - `resource` defines the APIVersion and Kind of the resource to be transformed into a service mapping.
   It also contains a service endpoint definition mapping, which defines how binding information for a particular service may be obtained.
