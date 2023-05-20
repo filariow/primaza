@@ -11,7 +11,10 @@ kind: Kustomization
 #   --from-literal agentsvc-image=ghcr.io/primaza/primaza-agentsvc:latest
 configMapGenerator:
 - behavior: merge
-  literals: []
   name: manager-config
   options:
     disableNameSuffixHash: true
+images:
+- name: controller
+  newName: primaza-controller
+  newTag: latest

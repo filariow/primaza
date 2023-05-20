@@ -19,6 +19,8 @@ package constants
 const (
 	ServiceAgentDeploymentName     = "primaza-svc-agent"
 	ApplicationAgentDeploymentName = "primaza-app-agent"
+	ServiceAgentConfigMapName      = "primaza-svc-config"
+	ApplicationAgentConfigMapName  = "primaza-app-config"
 	// This is the name of the secret that contains the information the service
 	// agents needs to write back registered services up to primaza.  It contains
 	// two keys: `kubeconfig`, a serialized kubeconfig for the upstream kubeconfig
