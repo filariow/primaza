@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	formatters "github.com/primaza/primaza/api/v1alpha1/formatters"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,11 +44,21 @@ type ServiceClaimSpec struct {
 	EnvironmentTag string `json:"environmentTag,omitempty"`
 	// +optional
 	ApplicationClusterContext *ServiceClaimApplicationClusterContext `json:"applicationClusterContext,omitempty"`
+
+	// +optional
+	Formatters *ServiceClaimFormatter `json:"formatters,omitempty"`
 }
 
 const (
 	ServiceClaimConditionReady = "Ready"
 )
+
+// +kubebuilder:validation:MinProperties:=1
+type ServiceClaimFormatter struct {
+	JSONFormatter *formatters.JSONFormatter `json:"jsonFormatter,omitempty"`
+	// YAMLFormatter *formatters.YAMLFormatter `json:"yamlFormatter,omitempty"`
+	GoTemplateFormatter *formatters.GoTemplateFormatter `json:"goTemplateFormatter,omitempty"`
+}
 
 // ServiceClaimStatus defines the observed state of ServiceClaim
 type ServiceClaimStatus struct {

@@ -120,6 +120,214 @@ spec:
                 description: EnvironmentTag allows the controller to search for those
                   application cluster environments that define such EnvironmentTag
                 type: string
+              formatters:
+                minProperties: 1
+                properties:
+                  goTemplateFormatter:
+                    description: YAMLFormatter *formatters.YAMLFormatter `json:"yamlFormatter,omitempty"`
+                    properties:
+                      filename:
+                        description: FileName is the name the file will have when
+                          projected in the pod filesystem. It will be used together
+                          with the Filepath or SERVICE_BINDING_ROOT. The name of the
+                          property in the ServiceEndpointDefinition Secret will match
+                          with this Filepath or SERVICE_BINDING_ROOT and Filename
+                          concatentation.
+                        type: string
+                      filepath:
+                        description: FilePath Represent the folder in which the file
+                          should be projected. If it's a relative path or empty, it
+                          will be prefixed with the SERVICE_BINDING_ROOT.
+                        type: string
+                      mapper:
+                        description: Mapper is the Mapper configuration for the GoTemplate
+                          Formatter
+                        maxProperties: 1
+                        minProperties: 1
+                        properties:
+                          configuration:
+                            description: Configuration is an inline configuration
+                            properties:
+                              template:
+                                description: Template is a GoTemplate in which the
+                                  ServiceEndpointDefinition data will be substituted.
+                                  It's the most flexible implementation for generating
+                                  your custom Configuration.
+                                type: string
+                            required:
+                            - template
+                            type: object
+                          configurationRef:
+                            description: ConfigurationRef is used to retrieve the
+                              data from a ConfigMap or Secret
+                            maxProperties: 1
+                            minProperties: 1
+                            properties:
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap.
+                                properties:
+                                  key:
+                                    description: The key to select.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the ConfigMap or
+                                      its key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              secretKeyRef:
+                                description: Selects a key of a secret in the pod's
+                                  namespace
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.  Must
+                                      be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the Secret or its
+                                      key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            type: object
+                        type: object
+                    required:
+                    - filename
+                    - mapper
+                    type: object
+                  jsonFormatter:
+                    properties:
+                      filename:
+                        description: FileName is the name the file will have when
+                          projected in the pod filesystem. It will be used together
+                          with the Filepath or SERVICE_BINDING_ROOT. The name of the
+                          property in the ServiceEndpointDefinition Secret will match
+                          with this Filepath or SERVICE_BINDING_ROOT and Filename
+                          concatentation.
+                        type: string
+                      filepath:
+                        description: FilePath Represent the folder in which the file
+                          should be projected. If it's a relative path or empty, it
+                          will be prefixed with the SERVICE_BINDING_ROOT.
+                        type: string
+                      mapper:
+                        description: Mapper is the Mapper configuration for the JSON
+                          Formatter
+                        maxProperties: 1
+                        minProperties: 1
+                        properties:
+                          configuration:
+                            description: Configuration is an inline configuration
+                            properties:
+                              fieldsMapping:
+                                description: Mappings contains the specification for
+                                  mapping ServiceEndpointDefinition data to properties
+                                  in the JSON Configuration file.
+                                items:
+                                  properties:
+                                    propertyPath:
+                                      description: PropertyPath is the path for the
+                                        property in the JSON configuration file
+                                      type: string
+                                    sedKey:
+                                      description: SEDKey is the Key from the ServiceEndpointDefinition
+                                        Secret to be mapped
+                                      type: string
+                                  required:
+                                  - propertyPath
+                                  - sedKey
+                                  type: object
+                                type: array
+                              missingFieldsRoot:
+                                description: 'MissingFieldsRoot can be used to define
+                                  the property that will contain the missing fields
+                                  data. As an example, a value of `/data/others` will
+                                  produce a `{ "data": { "others": [ ... ] }, ...
+                                  }` section in the configuration file.'
+                                type: string
+                              strategy:
+                                default: ExcludeMissing
+                                description: Strategy defines the default strategy
+                                  for fields not mapped by Mappings
+                                enum:
+                                - IncludeMissing
+                                - ExcludeMissing
+                                type: string
+                            required:
+                            - fieldsMapping
+                            - strategy
+                            type: object
+                          configurationRef:
+                            description: ConfigurationRef is used to retrieve the
+                              data from a ConfigMap or Secret
+                            maxProperties: 1
+                            minProperties: 1
+                            properties:
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap.
+                                properties:
+                                  key:
+                                    description: The key to select.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the ConfigMap or
+                                      its key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              secretKeyRef:
+                                description: Selects a key of a secret in the pod's
+                                  namespace
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.  Must
+                                      be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info:
+                                      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      TODO: Add other useful fields. apiVersion, kind,
+                                      uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the Secret or its
+                                      key must be defined
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            type: object
+                        type: object
+                    required:
+                    - filename
+                    - mapper
+                    type: object
+                type: object
               serviceClassIdentity:
                 description: ServiceClassIdentity defines a set of attributes that
                   are sufficient to identify a service class.  A ServiceClaim whose
