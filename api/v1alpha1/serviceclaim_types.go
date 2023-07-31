@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type ServiceClaimState string
@@ -67,9 +68,17 @@ type ServiceClaimStatus struct {
 	// Unique ID For the ServiceClaim
 	ClaimID string `json:"claimID,omitempty"`
 	// Name of the RegisteredService the ServiceClaim claimed
-	RegisteredService string `json:"registeredService"`
+	RegisteredService *ServiceClaimStatusRegisteredServiceInfo `json:"registeredService,omitempty"`
 	// The status of the service binding along with reason and type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// Info about the RegisteredService claimed by the ServiceClaim
+type ServiceClaimStatusRegisteredServiceInfo struct {
+	// Name of the RegisteredService the ServiceClaim claimed
+	Name string `json:"name"`
+	// UID of the RegisteredService the ServiceClaim claimed
+	UID types.UID `json:"uid"`
 }
 
 //+kubebuilder:object:root=true

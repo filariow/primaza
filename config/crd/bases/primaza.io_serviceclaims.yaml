@@ -246,7 +246,17 @@ spec:
                 type: array
               registeredService:
                 description: Name of the RegisteredService the ServiceClaim claimed
-                type: string
+                properties:
+                  name:
+                    description: Name of the RegisteredService the ServiceClaim claimed
+                    type: string
+                  uid:
+                    description: UID of the RegisteredService the ServiceClaim claimed
+                    type: string
+                required:
+                - name
+                - uid
+                type: object
               state:
                 default: Pending
                 description: The state of the ServiceClaim observed
@@ -256,7 +266,6 @@ spec:
                 - Invalid
                 type: string
             required:
-            - registeredService
             - state
             type: object
         type: object
