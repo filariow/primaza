@@ -29,6 +29,13 @@ const (
 	NoMatchingServiceFoundReason = "NoMatchingServiceFound"
 	ValidationErrorReason        = "ValidationError"
 
+	// Annotations
+	// RegisteredService Annotations
+	ServiceGroupAnnotation     = "primaza.io/service-group"
+	ServiceKindAnnotation      = "primaza.io/service-kind"
+	ServiceNameAnnotation      = "primaza.io/service-name"
+	ServiceNamespaceAnnotation = "primaza.io/service-namespace"
+	ServiceUIDAnnotation       = "primaza.io/service-uid"
 	// ServiceBinding Annotations
 	BoundRegisteredServiceNameAnnotation = "primaza.io/registered-service-name"
 	BoundRegisteredServiceUIDAnnotation  = "primaza.io/registered-service-uid"

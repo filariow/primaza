@@ -381,12 +381,21 @@ func PrepareRegisteredService(
 			"gvk", data.GroupVersionKind())
 		return v1alpha1.RegisteredService{}, nil, err
 	}
+
+	gvk := data.GetObjectKind().GroupVersionKind()
 	rs := v1alpha1.RegisteredService{
 		ObjectMeta: metav1.ObjectMeta{
 			// FIXME(sadlerap): this could cause naming conflicts; we need
 			// to take into account the type of resource somehow.
 			Name:      data.GetName(),
 			Namespace: target_namespace,
+			Annotations: map[string]string{
+				constants.ServiceNameAnnotation:      data.GetName(),
+				constants.ServiceKindAnnotation:      gvk.Kind,
+				constants.ServiceGroupAnnotation:     gvk.Group,
+				constants.ServiceUIDAnnotation:       string(data.GetUID()),
+				constants.ServiceNamespaceAnnotation: data.GetNamespace(),
+			},
 		},
 		Spec: v1alpha1.RegisteredServiceSpec{
 			ServiceEndpointDefinition: sedMappings,
