@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: manager-config
 data:
-  agentsvc-image: agentsvc:latest
-  agentapp-image: agentapp:latest
+  agentsvc-image: agentsvc:testing
+  agentapp-image: agentapp:testing
   health-check-interval: 600
   agentapp-manifest: |
     apiVersion: apps/v1

@@ -170,9 +170,9 @@ def ensure_worker_cluster_is_running(context, cluster_name: str, version: str = 
 
 @step(u'On Worker Cluster "{cluster_name}", the secret "{secret_name}" in namespace "{namespace}" has the key "{key}" with value "{value}"')
 def ensure_secret_key_has_the_right_value(context, cluster_name: str, secret_name: str, namespace: str, key: str, value: str):
-    primaza_cluster = context.cluster_provider.get_worker_cluster(cluster_name)
+    cluster = context.cluster_provider.get_cluster(cluster_name)
     polling2.poll(
-        target=lambda: primaza_cluster.read_secret_resource_data(namespace, secret_name, key) == bytes(value, 'utf-8'),
+        target=lambda: cluster.read_secret_resource_data(namespace, secret_name, key) == bytes(value, 'utf-8'),
         step=1,
         timeout=60)
 

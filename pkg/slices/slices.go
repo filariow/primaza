@@ -16,6 +16,32 @@ limitations under the License.
 
 package slices
 
+func Equals[T comparable](s1, s2 []T) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	if len(s1) < len(s2) {
+		return equals(s1, s2)
+	} else {
+		return equals(s2, s1)
+	}
+}
+
+func equals[T comparable](s1, s2 []T) bool {
+	m := map[T]struct{}{}
+	for _, s := range s1 {
+		m[s] = struct{}{}
+	}
+
+	for _, s := range s2 {
+		if _, ok := m[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func SubtractStr(s1, s2 []string) []string {
 	m := map[string]struct{}{}
 	for _, s := range s1 {

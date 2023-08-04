@@ -376,15 +376,15 @@ func (r *ServiceBindingReconciler) getApplication(ctx context.Context,
 	sb primazaiov1alpha1.ServiceBinding) ([]unstructured.Unstructured, error) {
 	var applications []unstructured.Unstructured
 	l := log.FromContext(ctx)
-	if sb.Spec.Application.Name != "" {
-		applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Name, Namespace: sb.Namespace}
+	if sb.Spec.Application.Selector.ByName != "" {
+		applicationLookupKey := client.ObjectKey{Name: sb.Spec.Application.Selector.ByName, Namespace: sb.Namespace}
 
 		application := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"kind":       sb.Spec.Application.Kind,
 				"apiVersion": sb.Spec.Application.APIVersion,
 				"metadata": map[string]interface{}{
-					"name":      sb.Spec.Application.Name,
+					"name":      sb.Spec.Application.Selector.ByName,
 					"namespace": sb.Namespace,
 				},
 			},
@@ -399,7 +399,7 @@ func (r *ServiceBindingReconciler) getApplication(ctx context.Context,
 		applications = append(applications, *application)
 	}
 
-	if sb.Spec.Application.Selector != nil {
+	if sb.Spec.Application.Selector.ByLabels != nil {
 		applicationList := &unstructured.UnstructuredList{
 			Object: map[string]interface{}{
 				"kind":       sb.Spec.Application.Kind,
@@ -409,7 +409,7 @@ func (r *ServiceBindingReconciler) getApplication(ctx context.Context,
 
 		l.Info("retrieving the application objects", "Application", applicationList)
 		opts := &client.ListOptions{
-			LabelSelector: labels.Set(sb.Spec.Application.Selector.MatchLabels).AsSelector(),
+			LabelSelector: labels.Set(sb.Spec.Application.Selector.ByLabels.MatchLabels).AsSelector(),
 			Namespace:     sb.Namespace,
 		}
 
@@ -642,11 +642,12 @@ func (r *ServiceBindingReconciler) unbindApplications(ctx context.Context,
 
 func verifyApplicationSatisfiesServiceBindingSpec(obj *unstructured.Unstructured, sb v1alpha1.ServiceBinding) bool {
 	switch {
-	case sb.Spec.Application.Name == obj.GetName():
+	case sb.Spec.Application.Selector.ByName == obj.GetName():
 		return true
-	case sb.Spec.Application.Selector != nil:
+	case sb.Spec.Application.Selector.ByLabels != nil:
+		// TODO: handle sb.Spec.Application.Selector.ByLabels.MatchExpressions
 		for label, value := range obj.GetLabels() {
-			val, ok := sb.Spec.Application.Selector.MatchLabels[label]
+			val, ok := sb.Spec.Application.Selector.ByLabels.MatchLabels[label]
 			return ok && value == val
 		}
 	default:

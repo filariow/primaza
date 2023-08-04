@@ -32,15 +32,26 @@ type ServiceClassIdentityItem struct {
 // It could be any process running within a container.
 type ApplicationSelector struct {
 	// API version of the referent.
+	//+required
 	APIVersion string `json:"apiVersion"`
 	// Kind of the referent.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	//+required
 	Kind string `json:"kind"`
+	// Rules to match a resource
+	//+required
+	Selector ApplicationMatcher `json:"selector"`
+}
+
+// +kubebuilder:validation:MaxProperties:=1
+// +kubebuilder:validation:MinProperties:=1
+// Express the rules to match a resource by name or by labels
+type ApplicationMatcher struct {
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+	ByName string `json:"byName,omitempty"`
 	// Selector is a query that selects the workload or workloads to bind the service to
-	Selector *metav1.LabelSelector `json:"selector,omitempty"`
+	ByLabels *metav1.LabelSelector `json:"byLabels,omitempty"`
 }
 
 // EnvironmentConstraints defines the constraints on environment for which

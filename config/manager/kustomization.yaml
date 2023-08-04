@@ -17,4 +17,4 @@ configMapGenerator:
 images:
 - name: primaza-controller
   newName: primaza-controller
-  newTag: latest
+  newTag: testing
